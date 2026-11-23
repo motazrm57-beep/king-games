@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>King Games</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090909;color:#fff;font-family:Arial,sans-serif}
+header{text-align:center;padding:28px 15px;background:linear-gradient(140deg,#17130a,#30230b)}
+.crown{font-size:48px}
+h1{color:#e5b943;margin:8px}
+.gold{color:#e5b943}
+.score{background:#201b10;border:1px solid #a98127;padding:12px;border-radius:12px;margin:15px auto;max-width:230px}
+main{padding:18px;max-width:550px;margin:auto}
+.card{background:#171717;border:1px solid #4d3b17;border-radius:16px;padding:18px;margin:14px 0}
+button{background:linear-gradient(135deg,#d5a62f,#89620d);color:#111;border:0;padding:14px;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer}
+.gamebtn{width:100%;margin-top:12px;text-align:right;background:#211c11;color:#f3cc62;border:1px solid #72551c}
+button:active{transform:scale(.98)}
+input{width:100%;padding:14px;background:#090909;color:white;border:1px solid #b38b30;border-radius:10px;font-size:18px;margin:12px 0}
+.back{background:#333;color:white;margin-bottom:12px}
+#game{display:none}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:15px}
+.cell{height:65px;font-size:25px;background:#30240e;color:#e9bb4c}
+footer{text-align:center;color:#777;padding:25px}
+</style>
+</head>
+<body>
+<header>
+<div class="crown">👑</div>
+<h1>KING GAMES</h1>
+<p>عالم التحدي والذكاء</p>
+<div class="score">⭐ نقاطك: <b id="points">0</b></div>
+</header>
+
+<main>
+<section id="home">
+<div class="card">
+<h2 class="gold">مرحباً بك يا بطل!</h2>
+<p>اختار لعبتك وابدأ التحدي واجمع أكبر عدد من النقاط.</p>
+</div>
+<button class="gamebtn" onclick="startQuiz()">🧠 أسئلة ومعلومات عامة</button>
+<button class="gamebtn" onclick="startMemory()">🎴 لعبة الذاكرة</button>
+<button class="gamebtn" onclick="startWord()">🔤 تخمين الكلمات</button>
+<button class="gamebtn" onclick="daily()">🔥 التحدي اليومي</button>
+</section>
+
+<section id="game" class="card">
+<button class="back" onclick="goHome()">⬅ الرئيسية</button>
+<h2 id="gameTitle" class="gold"></h2>
+<div id="gameContent"></div>
+</section>
+</main>
+<footer>KING GAMES 👑 © 2026</footer>
+
+<script>
+let points=Number(localStorage.getItem("kgpoints")||0);
+function updatePoints(){
+document.getElementById("points").textContent=points;
+localStorage.setItem("kgpoints",points);
+}
+updatePoints();
+
+function showGame(title,html){
+document.getElementById("home").style.display="none";
+document.getElementById("game").style.display="block";
+document.getElementById("gameTitle").textContent=title;
+document.getElementById("gameContent").innerHTML=html;
+}
+function goHome(){
+document.getElementById("home").style.display="block";
+document.getElementById("game").style.display="none";
+}
+
+const questions=[
+["ما عاصمة مصر؟",["القاهرة","الإسكندرية","أسوان"],0],
+["كم عدد أيام الأسبوع؟",["خمسة","سبعة","ثمانية"],1],
+["ما أكبر كوكب؟",["الأرض","المريخ","المشتري"],2],
+["كم عدد ألوان قوس قزح؟",["سبعة","خمسة","تسعة"],0],
+["ما الحيوان الملقب بملك الغابة؟",["الفيل","الأسد","النمر"],1],
+["ما ناتج 8 × 7؟",["54","56","64"],1],
+["ما الكوكب الأحمر؟",["المريخ","الزهرة","عطارد"],0]
+];
+let qi=0,qscore=0;
+
+function startQuiz(){
+qi=0;qscore=0;
+showGame("🧠 أسئلة ومعلومات عامة","");
+nextQuestion();
+}
+function nextQuestion(){
+if(qi>=questions.length){
+showGame("انتهى الاختبار",`<h2>نتيجتك: ${qscore} من ${questions.length}</h2><button onclick="goHome()">العودة للرئيسية</button>`);
+return;
+}
+let q=questions[qi];
+let html=`<h3>${qi+1}. ${q[0]}</h3>`;
+q[1].forEach((a,i)=>{
+html+=`<button class="gamebtn" onclick="answer(${i})">${a}</button>`;
+});
+document.getElementById("gameContent").innerHTML=html;
+}
+function answer(i){
+if(i===questions[qi][2]){
+qscore++;points+=10;updatePoints();
+alert("إجابة صحيحة! +10 نقاط 🎉");
+}else alert("إجابة غير صحيحة، حاول مرة أخرى!");
+qi++;nextQuestion();
+}
+
+let cards=[],first=null,lock=false,matches=0;
+function startMemory(){
+cards=["🐱","🐶","🍎","🚗","🐱","🐶","🍎","🚗"];
+cards.sort(()=>Math.random()-.5);
+first=null;lock=false;matches=0;
+showGame("🎴 لعبة الذاكرة",'<p>اكشف البطاقات واعثر على الأزواج المتشابهة.</p><div class="grid" id="memoryGrid"></div>');
+cards.forEach((v,i)=>{
+let b=document.createElement("button");
+b.className="cell";b.textContent="❔";
+b.onclick=()=>flip(b,v);
+b.dataset.index=i;
+document.getElementById("memoryGrid").appendChild(b);
+});
+}
+function flip(b,v){
+if(lock||b.textContent!=="❔")return;
+b.textContent=v;
+if(!first){first=b;return;}
+if(first.textContent===v){
+matches++;points+=10;updatePoints();first=null;
+if(matches===4)setTimeout(()=>alert("مبروك! فزت بـ40 نقطة 👑"),200);
+}else{
+lock=true;let old=first;first=null;
+setTimeout(()=>{b.textContent="❔";old.textContent="❔";lock=false},700);
+}
+}
+
+const words=["قاهرة","مدرسة","تفاحة","سيارة","نجاح"];
+let secret="";
+function startWord(){
+secret=words[Math.floor(Math.random()*words.length)];
+showGame("🔤 تخمين الكلمات",`
+<p>خمن الكلمة السرية. عندك 5 محاولات!</p>
+<input id="guess" placeholder="اكتب تخمينك هنا">
+<button onclick="checkWord()">تحقق من الإجابة</button>
+<p id="wordMessage"></p>
+<p id="attempts">المحاولات المتبقية: 5</p>`);
+window.tries=5;
+}
+function checkWord(){
+let input=document.getElementById("guess");
+let msg=document.getElementById("wordMessage");
+if(!input.value.trim())return;
+if(input.value.trim()===secret){
+msg.textContent="أحسنت! إجابة صحيحة 👑 +20 نقطة";
+points+=20;updatePoints();
+input.disabled=true;return;
+}
+window.tries--;
+document.getElementById("attempts").textContent="المحاولات المتبقية: "+window.tries;
+msg.textContent=window.tries>0?"حاول مرة أخرى!":"انتهت المحاولات. الكلمة هي: "+secret;
+if(window.tries<=0)input.disabled=true;
+}
+
+function daily(){
+let key="kgdaily"+new Date().toDateString();
+if(localStorage.getItem(key)){
+showGame("🔥 التحدي اليومي","<h3>لقد أكملت تحدي اليوم بالفعل!</h3>");
+return;
+}
+showGame("🔥 التحدي اليومي",`
+<h3>تحدي اليوم: ما ناتج 12 × 12 ؟</h3>
+<button class="gamebtn" onclick="dailyAnswer(124)">124</button>
+<button class="gamebtn" onclick="dailyAnswer(144)">144</button>
+<button class="gamebtn" onclick="dailyAnswer(154)">154</button>`);
+}
+function dailyAnswer(n){
+let key="kgdaily"+new Date().toDateString();
+if(localStorage.getItem(key))return;
+if(n===144){
+points+=50;updatePoints();
+localStorage.setItem(key,"done");
+showGame("مبروك يا بطل!","<h2 class='gold'>🔥 ربحت 50 نقطة!</h2><button onclick='goHome()'>الرئيسية</button>");
+}else{
+showGame("حاول مرة أخرى","<h3>الإجابة غير صحيحة.</h3><button onclick='goHome()'>الرئيسية</button>");
+}
+}
+</script>
+</body>
+</html>
